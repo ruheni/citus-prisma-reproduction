@@ -1,0 +1,105 @@
+datasource db {
+  provider = "postgres"
+  url      = "postgresql://postgres:@localhost:5433"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Company {
+  id BigInt @id @default(autoincrement()) @db.BigInt
+
+  name      String   @db.Text
+  image_url String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  campaign    Campaign[]
+  ads         Ad[]
+  clicks      Click[]
+  impressions Impression[]
+}
+
+model Campaign {
+  id BigInt @default(autoincrement()) @db.BigInt
+
+  name           String @db.Text
+  cost_model     String @db.Text
+  state          String @db.Text
+  monthly_budget BigInt @db.BigInt
+
+  blacklisted_site_urls String[] @db.Text
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  company    Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  company_id BigInt
+
+  ads Ad[]
+  @@id([company_id, id])
+}
+
+model Ad {
+  id                BigInt   @default(autoincrement()) @db.BigInt
+  name              String   @db.Text
+  image_url         String?  @db.Text
+  target_url        String?  @db.Text
+  impressions_count BigInt   @default(0)
+  click_count       BigInt   @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+
+  clicks      Click[]
+  impressions Impression[]
+
+  company    Company @relation(fields: [company_id], references: [id])
+  company_id BigInt
+
+
+  campaign            Campaign? @relation(fields: [campaign_company_id, campaign_id], references: [company_id, id], onDelete: NoAction, onUpdate: NoAction)
+  campaign_company_id BigInt?
+  campaign_id         BigInt?
+
+  @@id([company_id, id])
+}
+
+model Click {
+  id                 BigInt   @default(autoincrement()) @db.BigInt
+  clicked_at         DateTime @db.Timestamp()
+  site_url           String   @db.Text
+  cost_per_click_usd Decimal  @db.Decimal(20, 10)
+  user_ip            String   @db.Inet
+  user_data          Json     @db.JsonB
+
+
+  company    Company @relation(fields: [company_id], references: [id])
+  company_id BigInt
+
+
+  ad            Ad?     @relation(fields: [ad_company_id, ad_id], references: [company_id, id], onDelete: NoAction, onUpdate: NoAction)
+  ad_company_id BigInt?
+  ad_id         BigInt?
+
+  @@id([company_id, id])
+}
+
+model Impression {
+  id                  BigInt   @default(autoincrement()) @db.BigInt
+  seen_at             DateTime @db.Timestamp()
+  site_url            String   @db.Text
+  cost_per_impression Decimal  @db.Decimal(20, 10)
+  user_ip             String   @db.Inet
+  user_data           Json     @db.JsonB
+
+
+  company    Company @relation(fields: [company_id], references: [id])
+  company_id BigInt
+
+  ad            Ad?     @relation(fields: [ad_company_id, ad_id], references: [company_id, id], onDelete: NoAction, onUpdate: NoAction)
+  ad_company_id BigInt?
+  ad_id         BigInt?
+
+  @@id(fields: [company_id, id])
+}
